@@ -844,7 +844,7 @@
             });
         }
 
-        // --- УНИВЕРСАЛЬНОЕ СКАЧИВАНИЕ ZIP СО ВСЕМИ КАРТИНКАМИ (И С ДИСКА, И ИЗ БАЗЫ) ---
+        // --- УНИВЕРСАЛЬНОЕ СКАЧИВАНИЕ ZIP БЕЗ ОШИБОК CORS ДЛЯ file:/// ---
         async function downloadBackupZip() {
             if (!creatures.length && !itemLibrary.length) return alert('База пуста!');
 
@@ -855,25 +855,43 @@
 
             const zip = new JSZip();
             const imgFolder = zip.folder("images");
-            
-            // Вспомогательный Canvas-метод для чтения картинок по протоколу file:///
-            function getImageBlobFromUrl(url) {
+
+            // Чтение картинки через фоновый Canvas БЕЗ crossOrigin (обходит CORS для file:///)
+            function getImageBlobViaCanvas(url) {
                 return new Promise((resolve) => {
                     const img = new Image();
-                    img.crossOrigin = "Anonymous";
                     img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = img.naturalWidth || img.width;
-                        canvas.height = img.naturalHeight || img.height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0);
-                        canvas.toBlob((blob) => resolve(blob), 'image/png');
+                        try {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.naturalWidth || img.width;
+                            canvas.height = img.naturalHeight || img.height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0);
+                            
+                            // Конвертация в Base64 DataURL
+                            const dataURL = canvas.toDataURL('image/png');
+                            
+                            // Перевод Base64 в Blob
+                            const arr = dataURL.split(',');
+                            const mime = arr[0].match(/:(.*?);/)[1];
+                            const bstr = atob(arr[1]);
+                            let n = bstr.length;
+                            const u8arr = new Uint8Array(n);
+                            while (n--) {
+                                u8arr[n] = bstr.charCodeAt(n);
+                            }
+                            resolve(new Blob([u8arr], { type: mime }));
+                        } catch (e) {
+                            console.warn("Не удалось прочитать картинку с диска:", url, e);
+                            resolve(null);
+                        }
                     };
                     img.onerror = () => resolve(null);
                     img.src = url;
                 });
             }
 
+            // Собираем пути всех картинок
             const pathsToExport = new Set();
             creatures.forEach(c => {
                 if (c.image) pathsToExport.add(c.image);
@@ -886,6 +904,7 @@
                 if (l.icon) pathsToExport.add(l.icon);
             });
 
+            // Обрабатываем каждый файл
             for (const imagePath of pathsToExport) {
                 if (!imagePath) continue;
                 const fileName = imagePath.replace(/^images\//, '');
@@ -893,9 +912,9 @@
                 // 1. Ищем новую картинку в IndexedDB
                 let blobData = await idbGet('images', imagePath);
 
-                // 2. Если в базе ее нет — вытягиваем старый файл с диска через Canvas
+                // 2. Если в базе её нет (старая картинка с диска) — вытягиваем локальным Canvas
                 if (!blobData && !imagePath.startsWith('data:')) {
-                    blobData = await getImageBlobFromUrl(imagePath);
+                    blobData = await getImageBlobViaCanvas(imagePath);
                 }
 
                 if (blobData) {
