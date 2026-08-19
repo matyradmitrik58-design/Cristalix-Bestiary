@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Бестиарий — Справочник Существ</title>
-    <!-- JSZip библиотеки для выгрузки ZIP архива -->
+    <!-- JSZip библиотека для выгрузки ZIP архива -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
@@ -20,7 +20,6 @@
             --border: #475569;
             --gold: #f59e0b;
 
-            /* Качество */
             --rarity-common: #9ca3af;
             --rarity-uncommon: #22c55e;
             --rarity-rare: #3b82f6;
@@ -313,9 +312,16 @@
     <div class="modal" id="importModal">
         <div class="modal-content">
             <h2>📥 Импорт / Загрузка</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">
+                Если вы запускаете сайт без сервера, выберите папку с локальными изображениями вместе с ZIP или JSON файлом для восстановления старой галереи.
+            </p>
             <input type="file" id="importFileInput" accept=".json,.zip" style="display: none;" onchange="handleFileUpload(this)">
             <button type="button" style="background-color: #3b82f6;" onclick="document.getElementById('importFileInput').click()">📂 Выбрать ZIP или JSON файл</button>
-            <textarea id="importCodeArea" rows="5" placeholder="Или вставьте JSON код здесь..."></textarea>
+            
+            <label style="font-size: 0.85rem; margin-top: 10px;">Загрузить старые папки с изображениями с ПК (опционально):</label>
+            <input type="file" id="importFolderInput" webkitdirectory directory multiple style="font-size: 0.8rem;">
+            
+            <textarea id="importCodeArea" rows="4" placeholder="Или вставьте JSON код здесь..."></textarea>
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
                 <button type="button" style="background: var(--card-bg);" onclick="closeImportModal()">Отмена</button>
                 <button type="button" class="success" onclick="applyImport()">Применить</button>
@@ -419,7 +425,7 @@
                     return URL.createObjectURL(blobData);
                 }
             } catch (e) {
-                console.warn("Файл не найден в IndexedDB, грузим по внешнему пути:", e);
+                console.warn("Изображение не найдено в хранилище:", e);
             }
             return pathOrBase64;
         }
@@ -464,7 +470,7 @@
                     await idbSet('store', 'bestiary_item_library', dbLib);
                 }
             } catch (err) {
-                console.log("bestiary.json не загружен или открыт по локальному протоколу file:///");
+                console.log("Запуск идет по file:/// протоколу.");
             }
 
             creatures = dbCreatures;
@@ -844,7 +850,7 @@
             });
         }
 
-        // --- УНИВЕРСАЛЬНОЕ СКАЧИВАНИЕ ZIP БЕЗ ОШИБОК CORS ДЛЯ file:/// ---
+        // --- БЕЗОПАСНАЯ ГЕНЕРАЦИЯ ZIP АРХИВА ---
         async function downloadBackupZip() {
             if (!creatures.length && !itemLibrary.length) return alert('База пуста!');
 
@@ -853,93 +859,56 @@
             btn.innerText = "⏳ Сборка ZIP...";
             btn.disabled = true;
 
-            const zip = new JSZip();
-            const imgFolder = zip.folder("images");
+            try {
+                const zip = new JSZip();
+                const imgFolder = zip.folder("images");
 
-            // Чтение картинки через фоновый Canvas БЕЗ crossOrigin (обходит CORS для file:///)
-            function getImageBlobViaCanvas(url) {
-                return new Promise((resolve) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        try {
-                            const canvas = document.createElement('canvas');
-                            canvas.width = img.naturalWidth || img.width;
-                            canvas.height = img.naturalHeight || img.height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0);
-                            
-                            // Конвертация в Base64 DataURL
-                            const dataURL = canvas.toDataURL('image/png');
-                            
-                            // Перевод Base64 в Blob
-                            const arr = dataURL.split(',');
-                            const mime = arr[0].match(/:(.*?);/)[1];
-                            const bstr = atob(arr[1]);
-                            let n = bstr.length;
-                            const u8arr = new Uint8Array(n);
-                            while (n--) {
-                                u8arr[n] = bstr.charCodeAt(n);
-                            }
-                            resolve(new Blob([u8arr], { type: mime }));
-                        } catch (e) {
-                            console.warn("Не удалось прочитать картинку с диска:", url, e);
-                            resolve(null);
-                        }
-                    };
-                    img.onerror = () => resolve(null);
-                    img.src = url;
+                const pathsToExport = new Set();
+                creatures.forEach(c => {
+                    if (c.image) pathsToExport.add(c.image);
+                    if (c.drops) {
+                        c.drops.forEach(d => { if (d.icon) pathsToExport.add(d.icon); });
+                    }
                 });
+
+                itemLibrary.forEach(l => {
+                    if (l.icon) pathsToExport.add(l.icon);
+                });
+
+                for (const imagePath of pathsToExport) {
+                    if (!imagePath) continue;
+                    const fileName = imagePath.replace(/^images\//, '');
+                    
+                    // Извлекаем только те файлы, которые загружены в IndexedDB
+                    const blobData = await idbGet('images', imagePath);
+                    if (blobData) {
+                        imgFolder.file(fileName, blobData);
+                    }
+                }
+
+                const dataToExport = { creatures: creatures, library: itemLibrary };
+                zip.file("bestiary.json", JSON.stringify(dataToExport, null, 2));
+
+                const content = await zip.generateAsync({ type: "blob" });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(content);
+                a.download = `bestiary_backup.zip`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } catch (err) {
+                console.error(err);
+                alert("Ошибка генерации архива!");
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
             }
-
-            // Собираем пути всех картинок
-            const pathsToExport = new Set();
-            creatures.forEach(c => {
-                if (c.image) pathsToExport.add(c.image);
-                if (c.drops) {
-                    c.drops.forEach(d => { if (d.icon) pathsToExport.add(d.icon); });
-                }
-            });
-
-            itemLibrary.forEach(l => {
-                if (l.icon) pathsToExport.add(l.icon);
-            });
-
-            // Обрабатываем каждый файл
-            for (const imagePath of pathsToExport) {
-                if (!imagePath) continue;
-                const fileName = imagePath.replace(/^images\//, '');
-                
-                // 1. Ищем новую картинку в IndexedDB
-                let blobData = await idbGet('images', imagePath);
-
-                // 2. Если в базе её нет (старая картинка с диска) — вытягиваем локальным Canvas
-                if (!blobData && !imagePath.startsWith('data:')) {
-                    blobData = await getImageBlobViaCanvas(imagePath);
-                }
-
-                if (blobData) {
-                    imgFolder.file(fileName, blobData);
-                }
-            }
-
-            const dataToExport = { creatures: creatures, library: itemLibrary };
-            zip.file("bestiary.json", JSON.stringify(dataToExport, null, 2));
-
-            const content = await zip.generateAsync({ type: "blob" });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(content);
-            a.download = `bestiary_backup.zip`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-
-            btn.innerText = originalText;
-            btn.disabled = false;
         }
 
         function openImportModal() {
             id('importCodeArea').value = '';
             id('importFileInput').value = '';
+            id('importFolderInput').value = '';
             id('importModal').classList.add('open');
         }
 
@@ -984,9 +953,23 @@
         }
 
         async function applyImport() {
+            const folderInput = id('importFolderInput');
+            if (folderInput.files && folderInput.files.length > 0) {
+                for (const file of folderInput.files) {
+                    if (file.type.startsWith('image/')) {
+                        const relativePath = `images/${file.name}`;
+                        await idbSet('images', relativePath, file);
+                        updateCounterFromFilename(relativePath);
+                    }
+                }
+            }
+
             const rawText = id('importCodeArea').value.trim();
-            if (!rawText) return alert('Вставьте текст!');
-            await processAndApplyData(rawText);
+            if (rawText) {
+                await processAndApplyData(rawText);
+            } else if (!folderInput.files.length) {
+                alert('Выберите файл или вставьте JSON!');
+            }
         }
 
         async function processAndApplyData(jsonString) {
@@ -1032,7 +1015,7 @@
                 renderList();
                 if (creatures.length) selectCreature(creatures[0].id, false);
                 closeImportModal();
-                alert('🎉 Импорт завершён!');
+                alert('🎉 Данные успешно применены!');
             } catch (err) {
                 alert('Ошибка формата JSON!');
             }
