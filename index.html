@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Бестиарий — Справочник Существ</title>
+    <!-- JSZip библиотеки для выгрузки ZIP архива -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --card-bg: #334155;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #475569;
+            --gold: #f59e0b;
+
+            /* Качество */
+            --rarity-common: #9ca3af;
+            --rarity-uncommon: #22c55e;
+            --rarity-rare: #3b82f6;
+            --rarity-epic: #9333ea;
+            --rarity-legendary: #f97316;
+            --rarity-artifact: #ec4899;
+            --rarity-rune: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background-color: var(--bg-color); color: var(--text-main); }
+        body { display: flex; }
+
+        /* Табы переключения для мобилок */
+        .mobile-tabs { display: none; background-color: var(--panel-bg); border-bottom: 1px solid var(--border); width: 100%; flex-shrink: 0; }
+        .mobile-tab-btn { flex: 1; padding: 12px; background: transparent; border: none; color: var(--text-muted); font-size: 0.95rem; cursor: pointer; font-weight: bold; }
+        .mobile-tab-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); background: var(--card-bg); }
+
+        .sidebar { width: 320px; background-color: var(--panel-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 15px; gap: 10px; flex-shrink: 0; height: 100%; }
+        .brand { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
+        .controls-panel { display: flex; flex-direction: column; gap: 8px; }
+
+        input, select, textarea, button { background-color: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); padding: 8px 12px; border-radius: 6px; outline: none; font-size: 0.9rem; max-width: 100%; }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+
+        button { cursor: pointer; background-color: var(--accent); border: none; font-weight: 600; transition: background 0.2s; }
+        button:hover { background-color: var(--accent-hover); }
+        button.danger { background-color: var(--danger); }
+        button.success { background-color: var(--success); }
+
+        .sync-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+        .creature-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-top: 5px; }
+        .creature-item { background-color: var(--card-bg); padding: 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; border: 2px solid transparent; transition: all 0.2s; }
+        .creature-item:hover, .creature-item.active { border-color: var(--accent); background-color: #3b4252; }
+        .creature-item .title { font-weight: bold; word-break: break-word; }
+        .creature-item .badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; background: #475569; }
+
+        .star-btn { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
+        .star-btn.active { color: var(--gold); }
+
+        .main-content { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; height: 100%; }
+        .top-nav { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; gap: 10px; flex-wrap: wrap; }
+
+        .creature-card { display: grid; grid-template-columns: 240px 1fr; gap: 20px; background-color: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border); max-width: 100%; }
+        
+        .image-container { width: 100%; height: 220px; max-height: 220px; background-color: var(--card-bg); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border); }
+        .image-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        @keyframes fadeInCard {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade { animation: fadeInCard 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        .details-container { display: flex; flex-direction: column; gap: 12px; min-width: 0; word-break: break-word; }
+        .stats-row { display: flex; gap: 12px 20px; color: var(--text-muted); flex-wrap: wrap; font-size: 0.9rem; }
+        
+        .coords-box { display: flex; align-items: center; gap: 8px; background: var(--card-bg); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); width: fit-content; margin-top: 5px; flex-wrap: wrap; }
+        .coords-text { font-family: monospace; font-size: 0.95rem; color: var(--gold); font-weight: bold; }
+        .copy-btn { padding: 4px 8px; font-size: 0.8rem; background: var(--accent); border-radius: 4px; }
+
+        .section-title { font-weight: bold; color: var(--accent); margin-top: 10px; }
+
+        .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .drops-table { width: 100%; border-collapse: collapse; margin-top: 5px; min-width: 450px; }
+        .drops-table th, .drops-table td { border: 1px solid var(--border); padding: 8px; text-align: left; font-size: 0.85rem; vertical-align: middle; }
+        .drops-table th { background-color: var(--card-bg); }
+
+        .drop-icon { width: 32px; height: 32px; object-fit: contain; border-radius: 4px; background-color: var(--card-bg); }
+        .item-name { font-weight: bold; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 100; padding: 10px; }
+        .modal.open { display: flex; }
+        .modal-content { background-color: var(--panel-bg); width: 100%; max-width: 950px; max-height: 90vh; overflow-y: auto; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--border); }
+
+        .drop-input-card { background-color: var(--card-bg); border: 1px solid var(--border); padding: 10px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px; }
+        .drop-input-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr 0.8fr 1fr 1fr auto; gap: 8px; align-items: center; }
+        .ench-row { display: grid; grid-template-columns: 1fr 1.5fr 1fr auto; gap: 8px; align-items: center; }
+
+        .lib-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; margin-bottom: 5px; }
+        .lib-filter-btn { padding: 4px 10px; font-size: 0.8rem; background: var(--card-bg); border: 1px solid var(--border); border-radius: 4px; }
+        .lib-filter-btn.active { background: var(--accent); border-color: var(--accent); }
+
+        .rarity-common { color: var(--rarity-common); }
+        .rarity-uncommon { color: var(--rarity-uncommon); }
+        .rarity-rare { color: var(--rarity-rare); }
+        .rarity-epic { color: var(--rarity-epic); }
+        .rarity-legendary { color: var(--rarity-legendary); }
+        .rarity-artifact { color: var(--rarity-artifact); }
+        .rarity-rune { color: var(--rarity-rune); font-weight: bold; }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; height: 100vh; height: -webkit-fill-available; }
+            .mobile-tabs { display: flex; }
+            .sidebar { width: 100%; height: calc(100% - 45px); border-right: none; display: flex; padding: 10px; }
+            .sidebar.mobile-hidden { display: none !important; }
+            .main-content { width: 100%; height: calc(100% - 45px); padding: 10px; overflow-y: auto; display: flex; }
+            .main-content.mobile-hidden { display: none !important; }
+            .creature-card { grid-template-columns: 1fr; gap: 12px; padding: 12px; }
+            .image-container { height: 160px; max-height: 160px; }
+            .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--card-bg); padding: 8px; border-radius: 6px; }
+            #viewName { font-size: 1.3rem; word-break: break-word; }
+            .drop-input-grid { grid-template-columns: 1fr 1fr; }
+            .ench-row { grid-template-columns: 1fr; }
+            button, input, select { min-height: 38px; font-size: 0.9rem; }
+            .modal-content { padding: 12px; max-height: 95vh; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Вкладки для мобильных устройств -->
+    <div class="mobile-tabs">
+        <button class="mobile-tab-btn active" id="tabList" onclick="switchMobileTab('list')">📋 Список NPC</button>
+        <button class="mobile-tab-btn" id="tabView" onclick="switchMobileTab('view')">👁️ Карточка</button>
+    </div>
+
+    <div class="sidebar" id="sidebarSection">
+        <div class="brand">📖 Бестиарий</div>
+        <button onclick="openModal()">➕ Создать запись</button>
+        <button style="background-color: #8b5cf6;" onclick="openLibraryModal()">📚 Коллекция лута</button>
+
+        <div class="sync-buttons">
+            <button class="success" onclick="downloadBackupZip()">📦 Скачать ZIP</button>
+            <button style="background-color: #3b82f6;" onclick="openImportModal()">📥 Загрузить</button>
+        </div>
+
+        <div class="controls-panel">
+            <input type="text" id="searchName" placeholder="Поиск по имени..." oninput="renderList()">
+            <input type="text" id="searchDrop" placeholder="Поиск по предмету..." oninput="renderList()">
+            
+            <select id="filterType" onchange="renderList()">
+                <option value="ALL">Все типы</option>
+                <option value="Моб">Мобы</option>
+                <option value="Босс">Боссы</option>
+                <option value="NPC">NPC</option>
+            </select>
+
+            <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" id="filterFav" onchange="renderList()"> ★ Только избранное
+            </label>
+        </div>
+
+        <div class="creature-list" id="creatureList"></div>
+        <div id="countLabel" style="font-size: 0.8rem; color: var(--text-muted);">Всего: 0</div>
+    </div>
+
+    <div class="main-content mobile-hidden" id="mainSection">
+        <div class="top-nav">
+            <div style="display: flex; gap: 8px;">
+                <button onclick="navigate(-1)">◀ Пред.</button>
+                <button onclick="navigate(1)">След. ▶</button>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="editCurrent()">✏️ Изменить</button>
+                <button class="danger" onclick="deleteCurrent()">❌ Удалить</button>
+            </div>
+        </div>
+
+        <div class="creature-card animate-fade" id="detailsCard">
+            <div class="image-container">
+                <img id="viewImage" src="" alt="PNG" style="display: none;">
+                <span id="noImgText" style="color: var(--text-muted)">Нет картинки</span>
+            </div>
+            <div class="details-container">
+                <h1 id="viewName">Выберите существо</h1>
+                <div class="stats-row">
+                    <span>Тип: <b id="viewType">-</b></span>
+                    <span>HP: <b id="viewHp">-</b></span>
+                    <span>Респаун: <b id="viewRespawn">-</b></span>
+                    <span>Локация: <b id="viewLocation">-</b></span>
+                </div>
+
+                <!-- Блок для отображения и копирования координат -->
+                <div id="coordsContainer" style="display: none; flex-direction: column; gap: 4px;">
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">Координаты:</div>
+                    <div class="coords-box">
+                        <span class="coords-text" id="viewCoordsText">x:0, y:0, z:0</span>
+                        <button class="copy-btn" id="copyCoordsBtn" onclick="copyCoords()">📋 Скопировать</button>
+                        <button class="copy-btn" id="copyMsgBtn" style="background-color: #8b5cf6;" onclick="copyMsgCoords()">💬 Для /msg</button>
+                    </div>
+                </div>
+
+                <div class="section-title">Описание</div>
+                <p id="viewDesc" style="color: var(--text-muted); font-size: 0.9rem;">-</p>
+
+                <div class="section-title">Заметки</div>
+                <p id="viewNotes" style="color: var(--text-muted); font-size: 0.9rem;">-</p>
+
+                <div class="section-title">Предметы / Экипировка / Валюта / Дроп</div>
+                <div class="table-wrapper">
+                    <table class="drops-table">
+                        <thead>
+                            <tr>
+                                <th>Иконка</th>
+                                <th>Предмет</th>
+                                <th>Категория / Подтип</th>
+                                <th>Характеристики / Кол-во</th>
+                                <th>Заметка</th>
+                            </tr>
+                        </thead>
+                        <tbody id="viewDrops"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальные окна -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Новое существо</h2>
+            <input type="hidden" id="editId">
+            
+            <input type="text" id="inputName" placeholder="Имя существа">
+            <select id="inputType">
+                <option value="Моб">Моб</option>
+                <option value="Босс">Босс</option>
+                <option value="NPC">NPC</option>
+            </select>
+            <input type="number" id="inputHp" placeholder="Количество HP">
+            <input type="text" id="inputRespawn" placeholder="Время респауна">
+            <input type="text" id="inputLocation" placeholder="Локация (название)">
+            <input type="text" id="inputRawCoords" placeholder='Координаты [name:"...", x:-296, y:87, z:-964, dim:1941]'>
+            
+            <textarea id="inputDesc" rows="2" placeholder="Описание..."></textarea>
+            <textarea id="inputNotes" rows="2" placeholder="Заметки..."></textarea>
+
+            <label style="font-size: 0.85rem;">Загрузить изображение главной сущности:</label>
+            <input type="file" id="inputImage" accept="image/*">
+
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;" class="section-title">
+                <span>Предметы и Дроп</span>
+                <button type="button" style="background-color: #8b5cf6;" onclick="openSelectFromLibModal()">📦 Из коллекции</button>
+            </div>
+            <div id="dropInputsContainer" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            <button type="button" onclick="addDropRow()">+ Добавить предмет</button>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+                <button type="button" style="background: var(--card-bg);" onclick="closeModal()">Отмена</button>
+                <button type="button" onclick="saveCreature()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="libraryModal">
+        <div class="modal-content">
+            <h2>📚 Коллекция лута</h2>
+            <input type="text" id="libSearchInput" placeholder="🔍 Введите название предмета..." oninput="renderLibraryList()">
+            
+            <div class="lib-filters" id="libCategoryFilters">
+                <button type="button" class="lib-filter-btn active" onclick="setLibCategory('ALL', this)">Все</button>
+                <button type="button" class="lib-filter-btn" onclick="setLibCategory('Материал', this)">Материалы</button>
+                <button type="button" class="lib-filter-btn" onclick="setLibCategory('Броня', this)">Броня</button>
+                <button type="button" class="lib-filter-btn" onclick="setLibCategory('Оружие', this)">Оружие</button>
+                <button type="button" class="lib-filter-btn" onclick="setLibCategory('Щит', this)">Щиты</button>
+                <button type="button" class="lib-filter-btn" onclick="setLibCategory('Еда', this)">Еда</button>
+                <button type="button" class="lib-filter-btn" onclick="setLibCategory('Валюта', this)">Валюта</button>
+                <button type="button" class="lib-filter-btn" onclick="setLibCategory('Другое', this)">Другое</button>
+            </div>
+
+            <div id="libraryListContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto;"></div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+                <button type="button" onclick="closeLibraryModal()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="selectLibModal">
+        <div class="modal-content">
+            <h2>📦 Выбрать предмет из коллекции</h2>
+            <input type="text" id="selectLibSearchInput" placeholder="🔍 Поиск предмета..." oninput="renderSelectLibList()">
+            
+            <div class="lib-filters" id="selectLibCategoryFilters">
+                <button type="button" class="lib-filter-btn active" onclick="setSelectLibCategory('ALL', this)">Все</button>
+                <button type="button" class="lib-filter-btn" onclick="setSelectLibCategory('Материал', this)">Материалы</button>
+                <button type="button" class="lib-filter-btn" onclick="setSelectLibCategory('Броня', this)">Броня</button>
+                <button type="button" class="lib-filter-btn" onclick="setSelectLibCategory('Оружие', this)">Оружие</button>
+                <button type="button" class="lib-filter-btn" onclick="setSelectLibCategory('Щит', this)">Щиты</button>
+                <button type="button" class="lib-filter-btn" onclick="setSelectLibCategory('Еда', this)">Еда</button>
+                <button type="button" class="lib-filter-btn" onclick="setSelectLibCategory('Валюта', this)">Валюта</button>
+                <button type="button" class="lib-filter-btn" onclick="setSelectLibCategory('Другое', this)">Другое</button>
+            </div>
+
+            <div id="selectLibList" style="display: flex; flex-direction: column; gap: 8px; margin-top: 5px; max-height: 350px; overflow-y: auto;"></div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+                <button type="button" onclick="closeSelectFromLibModal()">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="importModal">
+        <div class="modal-content">
+            <h2>📥 Импорт / Загрузка</h2>
+            <input type="file" id="importFileInput" accept=".json,.zip" style="display: none;" onchange="handleFileUpload(this)">
+            <button type="button" style="background-color: #3b82f6;" onclick="document.getElementById('importFileInput').click()">📂 Выбрать ZIP или JSON файл</button>
+            <textarea id="importCodeArea" rows="5" placeholder="Или вставьте JSON код здесь..."></textarea>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" style="background: var(--card-bg);" onclick="closeImportModal()">Отмена</button>
+                <button type="button" class="success" onclick="applyImport()">Применить</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchMobileTab(tab) {
+            const sidebar = id('sidebarSection');
+            const main = id('mainSection');
+            const btnList = id('tabList');
+            const btnView = id('tabView');
+
+            if (tab === 'list') {
+                sidebar.classList.remove('mobile-hidden');
+                main.classList.add('mobile-hidden');
+                btnList.classList.add('active');
+                btnView.classList.remove('active');
+            } else {
+                sidebar.classList.add('mobile-hidden');
+                main.classList.remove('mobile-hidden');
+                btnView.classList.add('active');
+                btnList.classList.remove('active');
+            }
+        }
+
+        function id(name) { return document.getElementById(name); }
+
+        const dbPromise = new Promise((resolve, reject) => {
+            const req = indexedDB.open('BestiaryDBD', 2);
+            req.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains('store')) {
+                    db.createObjectStore('store');
+                }
+                if (!db.objectStoreNames.contains('images')) {
+                    db.createObjectStore('images');
+                }
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+
+        async function idbGet(storeName, key) {
+            const db = await dbPromise;
+            return new Promise((resolve) => {
+                const tx = db.transaction(storeName, 'readonly');
+                const req = tx.objectStore(storeName).get(key);
+                req.onsuccess = () => resolve(req.result);
+            });
+        }
+
+        async function idbSet(storeName, key, val) {
+            const db = await dbPromise;
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, 'readwrite');
+                const req = tx.objectStore(storeName).put(val, key);
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function idbGetAllKeys(storeName) {
+            const db = await dbPromise;
+            return new Promise((resolve) => {
+                const tx = db.transaction(storeName, 'readonly');
+                const req = tx.objectStore(storeName).getAllKeys();
+                req.onsuccess = () => resolve(req.result);
+            });
+        }
+
+        let creatures = [];
+        let itemLibrary = [];
+        let selectedId = null;
+        let currentImageValue = "";
+        let currentFullCoordsStr = "";
+
+        let currentLibCategory = 'ALL';
+        let currentSelectLibCategory = 'ALL';
+
+        // Глобальный счетчик скриншотов с сохранением в localStorage
+        let globalImageCounter = parseInt(localStorage.getItem('bestiary_img_counter') || '1000', 10);
+
+        function getNextImageFilename(ext = 'png') {
+            globalImageCounter++;
+            localStorage.setItem('bestiary_img_counter', globalImageCounter.toString());
+            return `images/img_${globalImageCounter}.${ext}`;
+        }
+
+        function updateCounterFromFilename(filename) {
+            if (!filename) return;
+            const match = filename.match(/img_(\d+)\./);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                if (num >= globalImageCounter) {
+                    globalImageCounter = num;
+                    localStorage.setItem('bestiary_img_counter', globalImageCounter.toString());
+                }
+            }
+        }
+
+        // Асинхронное получение URL картинки (IndexedDB / Base64 / Локальный путь)
+        async function resolveImageUrl(pathOrBase64) {
+            if (!pathOrBase64) return "";
+            if (pathOrBase64.startsWith('data:') || pathOrBase64.startsWith('http://') || pathOrBase64.startsWith('https://')) {
+                return pathOrBase64;
+            }
+            try {
+                const blobData = await idbGet('images', pathOrBase64);
+                if (blobData) {
+                    return URL.createObjectURL(blobData);
+                }
+            } catch (e) {
+                console.warn("Файл не найден в IndexedDB, грузим по внешнему пути:", e);
+            }
+            return pathOrBase64;
+        }
+
+        async function loadAndSyncData() {
+            let dbCreatures = await idbGet('store', 'bestiary_data') || [];
+            let dbLib = await idbGet('store', 'bestiary_item_library') || [];
+
+            try {
+                const res = await fetch('bestiary.json?v=' + Date.now());
+                if (res.ok) {
+                    const fileData = await res.json();
+                    let fetchedCreatures = Array.isArray(fileData) ? fileData : (fileData.creatures || []);
+                    let fetchedLib = fileData.library || [];
+
+                    if (dbCreatures.length === 0 && fetchedCreatures.length > 0) {
+                        dbCreatures = fetchedCreatures;
+                    } else if (fetchedCreatures.length > 0) {
+                        const favMap = new Map();
+                        dbCreatures.forEach(c => {
+                            if (c.id && c.favorite) favMap.set(c.id, true);
+                            if (c.name && c.favorite) favMap.set(c.name, true);
+                        });
+
+                        dbCreatures = fetchedCreatures.map(serverItem => {
+                            const isFav = favMap.has(serverItem.id) || favMap.has(serverItem.name);
+                            return { ...serverItem, favorite: isFav };
+                        });
+                    }
+
+                    if (dbLib.length === 0 && fetchedLib.length > 0) {
+                        dbLib = fetchedLib;
+                    } else {
+                        fetchedLib.forEach(serverLibItem => {
+                            if (!dbLib.some(l => l.name === serverLibItem.name)) {
+                                dbLib.push(serverLibItem);
+                            }
+                        });
+                    }
+
+                    await idbSet('store', 'bestiary_data', dbCreatures);
+                    await idbSet('store', 'bestiary_item_library', dbLib);
+                }
+            } catch (err) {
+                console.log("bestiary.json не загружен или открыт по локальному протоколу file:///");
+            }
+
+            creatures = dbCreatures;
+            itemLibrary = dbLib;
+
+            creatures.forEach(c => {
+                if (c.image) updateCounterFromFilename(c.image);
+                if (c.drops) c.drops.forEach(d => updateCounterFromFilename(d.icon));
+            });
+            itemLibrary.forEach(l => updateCounterFromFilename(l.icon));
+
+            renderList();
+            if (creatures.length > 0) {
+                selectCreature(creatures[0].id, false);
+            }
+        }
+
+        loadAndSyncData();
+
+        async function saveToStorage() {
+            await idbSet('store', 'bestiary_data', creatures);
+            await idbSet('store', 'bestiary_item_library', itemLibrary);
+        }
+
+        function getCreatureLevel(name) {
+            const match = name.match(/\[(\d+)\]/);
+            return match ? parseInt(match[1], 10) : 0;
+        }
+
+        function renderList() {
+            const nameQ = id('searchName').value.toLowerCase();
+            const dropQ = id('searchDrop').value.toLowerCase();
+            const typeQ = id('filterType').value;
+            const favQ = id('filterFav').checked;
+
+            const listEl = id('creatureList');
+            listEl.innerHTML = '';
+
+            let filtered = creatures.filter(c => {
+                if (favQ && !c.favorite) return false;
+                if (typeQ !== 'ALL' && c.type !== typeQ) return false;
+                if (nameQ && !c.name.toLowerCase().includes(nameQ)) return false;
+                if (dropQ && (!c.drops || !c.drops.some(d => d.name.toLowerCase().includes(dropQ)))) return false;
+                return true;
+            });
+
+            filtered.sort((a, b) => {
+                const lvlA = getCreatureLevel(a.name);
+                const lvlB = getCreatureLevel(b.name);
+                return lvlA === lvlB ? a.name.localeCompare(b.name) : lvlA - lvlB;
+            });
+
+            filtered.forEach(c => {
+                const item = document.createElement('div');
+                item.className = `creature-item ${c.id === selectedId ? 'active' : ''}`;
+                item.onclick = () => selectCreature(c.id, true);
+                item.innerHTML = `
+                    <div>
+                        <div class="title">${c.name}</div>
+                        <span class="badge">${c.type}</span>
+                    </div>
+                    <button class="star-btn ${c.favorite ? 'active' : ''}" onclick="toggleFav(event, ${c.id})">★</button>
+                `;
+                listEl.appendChild(item);
+            });
+
+            id('countLabel').innerText = `Всего: ${filtered.length}`;
+        }
+
+        function getDynamicDimCoords(rawStr) {
+            if (!rawStr) return "";
+
+            if (/dim:\s*46\b/.test(rawStr)) {
+                return rawStr;
+            }
+
+            const startDate = new Date(2026, 7, 5, 3, 0, 0); 
+            const now = new Date();
+
+            const diffTime = now - startDate;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            const currentDim = 1942 + (diffDays > 0 ? diffDays : 0);
+
+            return rawStr.replace(/dim:\s*\d+/, `dim:${currentDim}`);
+        }
+
+        function parseCoords(rawStr) {
+            if (!rawStr) return null;
+            const xMatch = rawStr.match(/x:\s*(-?\d+)/);
+            const yMatch = rawStr.match(/y:\s*(-?\d+)/);
+            const zMatch = rawStr.match(/z:\s*(-?\d+)/);
+
+            if (xMatch && yMatch && zMatch) {
+                return `x:${xMatch[1]}, y:${yMatch[1]}, z:${zMatch[1]}`;
+            }
+            return null;
+        }
+
+        async function selectCreature(idNum, isUserClick = false) {
+            selectedId = idNum;
+            renderList();
+            const c = creatures.find(x => x.id === idNum);
+            if (!c) return;
+
+            id('viewName').innerText = c.name + (c.favorite ? ' ★' : '');
+            id('viewType').innerText = c.type;
+            id('viewHp').innerText = c.hp;
+            id('viewRespawn').innerText = c.respawn || 'Не указан';
+            id('viewLocation').innerText = c.location || 'Не указана';
+            id('viewDesc').innerText = c.description || 'Нет описания';
+            id('viewNotes').innerText = c.notes || 'Нет заметок';
+
+            currentFullCoordsStr = getDynamicDimCoords(c.rawCoords || "");
+            const displayCoords = parseCoords(currentFullCoordsStr);
+            const coordsBox = id('coordsContainer');
+
+            if (displayCoords) {
+                id('viewCoordsText').innerText = displayCoords;
+                coordsBox.style.display = 'flex';
+            } else {
+                coordsBox.style.display = 'none';
+            }
+
+            const imgEl = id('viewImage');
+            const noImg = id('noImgText');
+            if (c.image) {
+                const resolvedImgUrl = await resolveImageUrl(c.image);
+                imgEl.src = resolvedImgUrl;
+                imgEl.style.display = 'block';
+                noImg.style.display = 'none';
+            } else {
+                imgEl.style.display = 'none';
+                noImg.style.display = 'block';
+            }
+
+            const dropsBody = id('viewDrops');
+            dropsBody.innerHTML = '';
+            
+            for (const d of (c.drops || [])) {
+                let iconHtml = '-';
+                if (d.icon) {
+                    const resolvedIcon = await resolveImageUrl(d.icon);
+                    iconHtml = `<img src="${resolvedIcon}" class="drop-icon">`;
+                }
+
+                let subTypeStr = d.catType;
+                if (d.catType === 'Броня') subTypeStr += ` (${d.armorType})`;
+                if (d.catType === 'Валюта') subTypeStr += ` (${d.coinType})`;
+
+                let statsStr = '';
+                if (d.catType === 'Оружие' && d.damage) statsStr += `⚔️ Урон: <b>${d.damage}</b> `;
+                if (['Еда', 'Валюта', 'Материал', 'Другое'].includes(d.catType) && d.count) statsStr += `📦 Кол-во: <b>${d.count}</b> `;
+                if (d.enchantments) statsStr += `<i>${d.enchantments}</i>`;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="text-align: center;">${iconHtml}</td>
+                    <td><span class="item-name ${d.rarity}">${d.name}</span></td>
+                    <td>${subTypeStr}</td>
+                    <td>${statsStr || '-'}</td>
+                    <td>${d.comment || '-'}</td>
+                `;
+                dropsBody.appendChild(tr);
+            }
+
+            const card = id('detailsCard');
+            card.classList.remove('animate-fade');
+            void card.offsetWidth;
+            card.classList.add('animate-fade');
+
+            if (isUserClick && window.innerWidth <= 768) {
+                switchMobileTab('view');
+            }
+        }
+
+        function copyCoords() {
+            if (!currentFullCoordsStr) return;
+            navigator.clipboard.writeText(currentFullCoordsStr).then(() => {
+                const btn = id('copyCoordsBtn');
+                btn.innerText = "✅ Скопировано!";
+                setTimeout(() => { btn.innerText = "📋 Скопировать"; }, 1500);
+            });
+        }
+
+        function copyMsgCoords() {
+            if (!currentFullCoordsStr) return;
+            const msgCommand = `/msg console ${currentFullCoordsStr}`;
+            navigator.clipboard.writeText(msgCommand).then(() => {
+                const btn = id('copyMsgBtn');
+                btn.innerText = "✅ Скопировано!";
+                setTimeout(() => { btn.innerText = "💬 Для /msg"; }, 1500);
+            });
+        }
+
+        async function toggleFav(e, idNum) {
+            e.stopPropagation();
+            const c = creatures.find(x => x.id === idNum);
+            if (c) {
+                c.favorite = !c.favorite;
+                await saveToStorage();
+                renderList();
+                if(selectedId === idNum) selectCreature(idNum, false);
+            }
+        }
+
+        function openLibraryModal() {
+            id('libSearchInput').value = '';
+            currentLibCategory = 'ALL';
+            resetFilterButtons('libCategoryFilters');
+            renderLibraryList();
+            id('libraryModal').classList.add('open');
+        }
+
+        function closeLibraryModal() { id('libraryModal').classList.remove('open'); }
+
+        function setLibCategory(cat, btn) {
+            currentLibCategory = cat;
+            highlightButton(btn, 'libCategoryFilters');
+            renderLibraryList();
+        }
+
+        async function renderLibraryList() {
+            const container = id('libraryListContainer');
+            container.innerHTML = '';
+            const query = id('libSearchInput').value.toLowerCase().trim();
+
+            const filtered = itemLibrary.filter(item => {
+                if (query && !item.name.toLowerCase().includes(query)) return false;
+                if (currentLibCategory !== 'ALL' && item.catType !== currentLibCategory) return false;
+                return true;
+            });
+
+            if (!filtered.length) {
+                container.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 20px;">Ничего не найдено.</div>';
+                return;
+            }
+
+            for (const item of filtered) {
+                const originalIndex = itemLibrary.indexOf(item);
+                const card = document.createElement('div');
+                card.style.cssText = 'background: var(--card-bg); padding: 10px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border); gap: 10px;';
+                
+                let iconHtml = '📦';
+                if (item.icon) {
+                    const resolvedIcon = await resolveImageUrl(item.icon);
+                    iconHtml = `<img src="${resolvedIcon}" class="drop-icon">`;
+                }
+                
+                const itemJson = JSON.stringify(item).replace(/'/g, "&apos;");
+
+                card.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                        ${iconHtml}
+                        <div style="min-width: 0; word-break: break-word;">
+                            <div class="item-name ${item.rarity}">${item.name}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">${item.catType}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                        <button type="button" class="success" onclick='insertFromLibrary(${itemJson})'>+ Добавить</button>
+                        <button type="button" class="danger" onclick="deleteFromLibrary(${originalIndex})">Удалить</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        async function saveDropToLibrary(btn) {
+            const card = btn.closest('.drop-input-card');
+            const item = {
+                name: card.querySelector('.d-name').value.trim(),
+                catType: card.querySelector('.d-cat').value,
+                armorType: card.querySelector('.d-armor').value,
+                coinType: card.querySelector('.d-coin').value,
+                damage: card.querySelector('.d-damage').value,
+                count: card.querySelector('.d-count').value,
+                rarity: card.querySelector('.d-rarity').value,
+                comment: card.querySelector('.d-comment').value.trim(),
+                enchantments: card.querySelector('.d-ench').value.trim(),
+                icon: card.querySelector('.d-icon-path').value
+            };
+
+            if (!item.name) return alert('Введите название!');
+            itemLibrary.push(item);
+            await saveToStorage();
+            alert(`✅ Записано!`);
+        }
+
+        async function deleteFromLibrary(index) {
+            itemLibrary.splice(index, 1);
+            await saveToStorage();
+            renderLibraryList();
+            renderSelectLibList();
+        }
+
+        function openSelectFromLibModal() {
+            id('selectLibSearchInput').value = '';
+            currentSelectLibCategory = 'ALL';
+            resetFilterButtons('selectLibCategoryFilters');
+            renderSelectLibList();
+            id('selectLibModal').classList.add('open');
+        }
+
+        function closeSelectFromLibModal() { id('selectLibModal').classList.remove('open'); }
+
+        function setSelectLibCategory(cat, btn) {
+            currentSelectLibCategory = cat;
+            highlightButton(btn, 'selectLibCategoryFilters');
+            renderSelectLibList();
+        }
+
+        async function renderSelectLibList() {
+            const container = id('selectLibList');
+            container.innerHTML = '';
+            const query = id('selectLibSearchInput').value.toLowerCase().trim();
+
+            const filtered = itemLibrary.filter(item => {
+                if (query && !item.name.toLowerCase().includes(query)) return false;
+                if (currentSelectLibCategory !== 'ALL' && item.catType !== currentSelectLibCategory) return false;
+                return true;
+            });
+
+            if (!filtered.length) {
+                container.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 15px;">Ничего не найдено.</div>';
+                return;
+            }
+
+            for (const item of filtered) {
+                const originalIndex = itemLibrary.indexOf(item);
+                const card = document.createElement('div');
+                card.style.cssText = 'background: var(--card-bg); padding: 8px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border); gap: 10px;';
+                
+                let iconHtml = '📦';
+                if (item.icon) {
+                    const resolvedIcon = await resolveImageUrl(item.icon);
+                    iconHtml = `<img src="${resolvedIcon}" class="drop-icon">`;
+                }
+                
+                const itemJson = JSON.stringify(item).replace(/'/g, "&apos;");
+
+                card.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                        ${iconHtml}
+                        <div style="min-width: 0; word-break: break-word;">
+                            <span class="item-name ${item.rarity}">${item.name}</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                        <button type="button" class="success" onclick='insertFromLibrary(${itemJson})'>+ Добавить</button>
+                        <button type="button" class="danger" onclick="deleteFromLibrary(${originalIndex})">Удалить</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        function insertFromLibrary(item) {
+            const modal = id('modal');
+            if (!modal.classList.contains('open')) {
+                openModal(true);
+            }
+            addDropRow(item.name, item.catType, item.armorType, item.coinType, item.damage, item.count, item.rarity, item.enchantments, item.comment, item.icon);
+            closeSelectFromLibModal();
+            closeLibraryModal();
+        }
+
+        function highlightButton(btn, containerId) {
+            document.querySelectorAll(`#${containerId} .lib-filter-btn`).forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function resetFilterButtons(containerId) {
+            document.querySelectorAll(`#${containerId} .lib-filter-btn`).forEach((b, idx) => {
+                if (idx === 0) b.classList.add('active');
+                else b.classList.remove('active');
+            });
+        }
+
+        async function downloadBackupZip() {
+            if (!creatures.length && !itemLibrary.length) return alert('База пуста!');
+
+            const zip = new JSZip();
+            const imgFolder = zip.folder("images");
+            
+            async function addImageToZip(imagePath) {
+                if (!imagePath || !imagePath.startsWith('images/')) return;
+                const fileName = imagePath.replace(/^images\//, '');
+                
+                const blobData = await idbGet('images', imagePath);
+                if (blobData) {
+                    imgFolder.file(fileName, blobData);
+                }
+            }
+
+            for (const c of creatures) {
+                if (c.image) await addImageToZip(c.image);
+                if (c.drops) {
+                    for (const d of c.drops) {
+                        if (d.icon) await addImageToZip(d.icon);
+                    }
+                }
+            }
+            for (const l of itemLibrary) {
+                if (l.icon) await addImageToZip(l.icon);
+            }
+
+            const dataToExport = { creatures: creatures, library: itemLibrary };
+            zip.file("bestiary.json", JSON.stringify(dataToExport, null, 2));
+
+            const content = await zip.generateAsync({ type: "blob" });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(content);
+            a.download = `bestiary_backup.zip`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+
+        function openImportModal() {
+            id('importCodeArea').value = '';
+            id('importFileInput').value = '';
+            id('importModal').classList.add('open');
+        }
+
+        function closeImportModal() { id('importModal').classList.remove('open'); }
+
+        async function handleFileUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (file.name.endsWith('.zip')) {
+                try {
+                    const zip = await JSZip.loadAsync(file);
+                    let jsonFile = zip.file("bestiary.json") || zip.file("bestiary_clean.json");
+                    if (!jsonFile) {
+                        const jsonEntries = zip.file(/\.json$/i);
+                        if (jsonEntries.length > 0) jsonFile = jsonEntries[0];
+                    }
+
+                    if (!jsonFile) return alert('В ZIP архиве не найден .json файл!');
+
+                    const jsonText = await jsonFile.async("string");
+
+                    const imageFiles = zip.file(/^images\//i);
+                    for (const imgFile of imageFiles) {
+                        if (imgFile.dir) continue;
+                        const blob = await imgFile.async("blob");
+                        const relativePath = imgFile.name; 
+                        await idbSet('images', relativePath, blob);
+                        updateCounterFromFilename(relativePath);
+                    }
+
+                    await processAndApplyData(jsonText);
+                } catch (err) {
+                    console.error(err);
+                    alert("Ошибка чтения ZIP архива!");
+                }
+            } else {
+                const reader = new FileReader();
+                reader.onload = async (e) => processAndApplyData(e.target.result);
+                reader.readAsText(file);
+            }
+        }
+
+        async function applyImport() {
+            const rawText = id('importCodeArea').value.trim();
+            if (!rawText) return alert('Вставьте текст!');
+            await processAndApplyData(rawText);
+        }
+
+        async function processAndApplyData(jsonString) {
+            try {
+                const parsedData = JSON.parse(jsonString);
+                let incomingCreatures = Array.isArray(parsedData) ? parsedData : (parsedData.creatures || []);
+                let incomingLib = parsedData.library || [];
+
+                incomingCreatures.forEach(newItem => {
+                    if (newItem.image) updateCounterFromFilename(newItem.image);
+                    if (newItem.drops) newItem.drops.forEach(d => { if (d.icon) updateCounterFromFilename(d.icon); });
+
+                    const idx = creatures.findIndex(c => c.id === newItem.id || c.name === newItem.name);
+                    if (idx !== -1) {
+                        const existingDrops = creatures[idx].drops || [];
+                        const newDrops = newItem.drops || [];
+
+                        const mergedDrops = [...existingDrops];
+                        newDrops.forEach(d => {
+                            if (!mergedDrops.some(m => m.name === d.name)) {
+                                mergedDrops.push(d);
+                            }
+                        });
+
+                        creatures[idx] = {
+                            ...newItem,
+                            ...creatures[idx],
+                            drops: mergedDrops
+                        };
+                    } else {
+                        creatures.push(newItem);
+                    }
+                });
+
+                incomingLib.forEach(newItem => {
+                    if (newItem.icon) updateCounterFromFilename(newItem.icon);
+                    if (!itemLibrary.some(i => i.name === newItem.name)) {
+                        itemLibrary.push(newItem);
+                    }
+                });
+
+                await saveToStorage();
+                renderList();
+                if (creatures.length) selectCreature(creatures[0].id, false);
+                closeImportModal();
+                alert('🎉 Импорт завершён!');
+            } catch (err) {
+                alert('Ошибка формата JSON!');
+            }
+        }
+
+        function openModal(isEdit = false) {
+            id('modal').classList.add('open');
+            id('dropInputsContainer').innerHTML = '';
+            currentImageValue = "";
+
+            if (isEdit && selectedId) {
+                const c = creatures.find(x => x.id === selectedId);
+                id('modalTitle').innerText = "Редактировать " + c.name;
+                id('editId').value = c.id;
+                id('inputName').value = c.name;
+                id('inputType').value = c.type;
+                id('inputHp').value = c.hp;
+                id('inputRespawn').value = c.respawn || "";
+                id('inputLocation').value = c.location;
+                id('inputRawCoords').value = c.rawCoords || "";
+                id('inputDesc').value = c.description;
+                id('inputNotes').value = c.notes;
+                currentImageValue = c.image || "";
+                (c.drops || []).forEach(d => addDropRow(d.name, d.catType, d.armorType, d.coinType, d.damage, d.count, d.rarity, d.enchantments, d.comment, d.icon));
+            } else {
+                id('modalTitle').innerText = "Новое существо";
+                id('editId').value = "";
+                id('inputName').value = "";
+                id('inputHp').value = "";
+                id('inputRespawn').value = "";
+                id('inputLocation').value = "";
+                id('inputRawCoords').value = "";
+                id('inputDesc').value = "";
+                id('inputNotes').value = "";
+            }
+        }
+
+        function closeModal() { id('modal').classList.remove('open'); }
+
+        function addDropRow(name = "", catType = "Материал", armorType = "Без брони", coinType = "Деревянная монета", damage = "", count = "", rarity = "rarity-common", enchantments = "", comment = "", iconPath = "") {
+            const container = id('dropInputsContainer');
+            const card = document.createElement('div');
+            card.className = 'drop-input-card';
+            
+            const isCountVisible = ['Еда', 'Валюта', 'Материал', 'Другое'].includes(catType);
+
+            card.innerHTML = `
+                <div class="drop-input-grid">
+                    <input type="text" placeholder="Предмет" value="${name}" class="d-name">
+                    <select class="d-cat" onchange="toggleItemInputs(this)">
+                        <option value="Материал" ${catType === 'Материал' ? 'selected' : ''}>Материал</option>
+                        <option value="Оружие" ${catType === 'Оружие' ? 'selected' : ''}>Оружие</option>
+                        <option value="Броня" ${catType === 'Броня' ? 'selected' : ''}>Броня</option>
+                        <option value="Щит" ${catType === 'Щит' ? 'selected' : ''}>Щит</option>
+                        <option value="Еда" ${catType === 'Еда' ? 'selected' : ''}>Еда</option>
+                        <option value="Валюта" ${catType === 'Валюта' ? 'selected' : ''}>Валюта</option>
+                        <option value="Другое" ${catType === 'Другое' ? 'selected' : ''}>Другое</option>
+                    </select>
+
+                    <select class="d-armor" style="display: ${catType === 'Броня' ? 'block' : 'none'};">
+                        <option value="Кожаная" ${armorType === 'Кожаная' ? 'selected' : ''}>Кожаная</option>
+                        <option value="Железная" ${armorType === 'Железная' ? 'selected' : ''}>Железная</option>
+                        <option value="Кольчужная" ${armorType === 'Кольчужная' ? 'selected' : ''}>Кольчужная</option>
+                        <option value="Алмазная" ${armorType === 'Алмазная' ? 'selected' : ''}>Алмазная</option>
+                    </select>
+
+                    <select class="d-coin" style="display: ${catType === 'Валюта' ? 'block' : 'none'};">
+                        <option value="Деревянная монета" ${coinType === 'Деревянная монета' ? 'selected' : ''}>Деревянная монета</option>
+                        <option value="Каменная монета" ${coinType === 'Каменная монета' ? 'selected' : ''}>Каменная монета</option>
+                        <option value="Железная монета" ${coinType === 'Железная монета' ? 'selected' : ''}>Железная монета</option>
+                        <option value="Монета Ордена доблести" ${coinType === 'Монета Ордена доблести' ? 'selected' : ''}>Монета Ордена доблести</option>
+                        <option value="Монета Торговой Федерации" ${coinType === 'Монета Торговой Федерации' ? 'selected' : ''}>Монета Торговой Федерации</option>
+                    </select>
+
+                    <input type="number" placeholder="Урон" value="${damage}" class="d-damage" style="display: ${catType === 'Оружие' ? 'block' : 'none'};">
+                    <input type="number" placeholder="Кол-во" value="${count}" class="d-count" style="display: ${isCountVisible ? 'block' : 'none'};">
+
+                    <select class="d-rarity">
+                        <option value="rarity-common" class="rarity-common" ${rarity === 'rarity-common' ? 'selected' : ''}>Обычное</option>
+                        <option value="rarity-uncommon" class="rarity-uncommon" ${rarity === 'rarity-uncommon' ? 'selected' : ''}>Необычное</option>
+                        <option value="rarity-rare" class="rarity-rare" ${rarity === 'rarity-rare' ? 'selected' : ''}>Редкое</option>
+                        <option value="rarity-epic" class="rarity-epic" ${rarity === 'rarity-epic' ? 'selected' : ''}>Превосходное</option>
+                        <option value="rarity-legendary" class="rarity-legendary" ${rarity === 'rarity-legendary' ? 'selected' : ''}>Легендарное</option>
+                        <option value="rarity-artifact" class="rarity-artifact" ${rarity === 'rarity-artifact' ? 'selected' : ''}>Артефакт</option>
+                        <option value="rarity-rune" class="rarity-rune" ${rarity === 'rarity-rune' ? 'selected' : ''}>Руна</option>
+                    </select>
+
+                    <input type="text" placeholder="Комментарий" value="${comment}" class="d-comment">
+                    <button type="button" class="danger" onclick="this.parentElement.parentElement.remove()">X</button>
+                </div>
+                <div class="ench-row">
+                    <input type="text" placeholder="Зачарования..." value="${enchantments}" class="d-ench">
+                    <input type="file" accept="image/*" class="d-icon-file" style="font-size: 0.75rem;">
+                    <input type="hidden" value="${iconPath}" class="d-icon-path">
+                    <button type="button" style="background: var(--gold); color: black;" onclick="saveDropToLibrary(this)">⭐ В базу</button>
+                </div>
+            `;
+
+            const fileInput = card.querySelector('.d-icon-file');
+            const hiddenIconPath = card.querySelector('.d-icon-path');
+            fileInput.addEventListener('change', async function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const ext = file.name.split('.').pop().toLowerCase() || 'png';
+                    const newPath = getNextImageFilename(ext);
+                    await idbSet('images', newPath, file);
+                    hiddenIconPath.value = newPath;
+                }
+            });
+
+            container.appendChild(card);
+        }
+
+        function toggleItemInputs(selectEl) {
+            const card = selectEl.parentElement;
+            const val = selectEl.value;
+            card.querySelector('.d-armor').style.display = val === 'Броня' ? 'block' : 'none';
+            card.querySelector('.d-coin').style.display = val === 'Валюта' ? 'block' : 'none';
+            card.querySelector('.d-damage').style.display = val === 'Оружие' ? 'block' : 'none';
+            card.querySelector('.d-count').style.display = ['Еда', 'Валюта', 'Материал', 'Другое'].includes(val) ? 'block' : 'none';
+        }
+
+        id('inputImage').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const ext = file.name.split('.').pop().toLowerCase() || 'png';
+                const newPath = getNextImageFilename(ext);
+                await idbSet('images', newPath, file);
+                currentImageValue = newPath;
+            }
+        });
+
+        async function saveCreature() {
+            const idVal = id('editId').value;
+            const name = id('inputName').value.trim();
+            if (!name) return alert('Введите имя!');
+
+            const drops = [];
+            document.querySelectorAll('.drop-input-card').forEach(card => {
+                const dName = card.querySelector('.d-name').value.trim();
+                if (dName) {
+                    drops.push({
+                        name: dName,
+                        catType: card.querySelector('.d-cat').value,
+                        armorType: card.querySelector('.d-armor').value,
+                        coinType: card.querySelector('.d-coin').value,
+                        damage: card.querySelector('.d-damage').value,
+                        count: card.querySelector('.d-count').value,
+                        rarity: card.querySelector('.d-rarity').value,
+                        enchantments: card.querySelector('.d-ench').value.trim(),
+                        comment: card.querySelector('.d-comment').value.trim(),
+                        icon: card.querySelector('.d-icon-path').value
+                    });
+                }
+            });
+
+            const creatureData = {
+                id: idVal ? parseInt(idVal) : Date.now(),
+                name: name,
+                type: id('inputType').value,
+                hp: parseInt(id('inputHp').value) || 0,
+                respawn: id('inputRespawn').value.trim(),
+                location: id('inputLocation').value.trim(),
+                rawCoords: id('inputRawCoords').value.trim(),
+                description: id('inputDesc').value.trim(),
+                notes: id('inputNotes').value.trim(),
+                image: currentImageValue,
+                favorite: idVal ? (creatures.find(x => x.id === parseInt(idVal))?.favorite || false) : false,
+                drops: drops
+            };
+
+            if (idVal) {
+                const index = creatures.findIndex(x => x.id === parseInt(idVal));
+                creatures[index] = creatureData;
+            } else {
+                creatures.push(creatureData);
+            }
+
+            await saveToStorage();
+            closeModal();
+            renderList();
+            selectCreature(creatureData.id, true);
+        }
+
+        function editCurrent() { if (selectedId) openModal(true); }
+
+        async function deleteCurrent() {
+            if (!selectedId) return;
+            if (confirm("Удалить?")) {
+                creatures = creatures.filter(x => x.id !== selectedId);
+                await saveToStorage();
+                selectedId = creatures.length ? creatures[0].id : null;
+                renderList();
+                if (selectedId) selectCreature(selectedId, false);
+            }
+        }
+
+        function navigate(dir) {
+            if (!creatures.length) return;
+            const currentIndex = creatures.findIndex(x => x.id === selectedId);
+            let newIndex = currentIndex + dir;
+            if (newIndex >= 0 && newIndex < creatures.length) {
+                selectCreature(creatures[newIndex].id, false);
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+            if (e.key === 'ArrowUp') navigate(-1);
+            if (e.key === 'ArrowDown') navigate(1);
+            if (e.key === 'Delete') deleteCurrent();
+        });
+    </script>
+</body>
+</html>
