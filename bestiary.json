@@ -12680,6 +12680,20 @@
           "icon": "images/img_1013.png"
         }
       ]
+    },
+    {
+      "id": 1787160239387,
+      "name": "12313",
+      "type": "Моб",
+      "hp": 123123123,
+      "respawn": "",
+      "location": "",
+      "rawCoords": "",
+      "description": "",
+      "notes": "",
+      "image": "images/img_1237.gif",
+      "favorite": false,
+      "drops": []
     }
   ],
   "library": [
@@ -12900,18 +12914,6 @@
       "icon": "images/img_1031.png"
     },
     {
-      "name": "Стейк",
-      "catType": "Еда",
-      "armorType": "Кожаная",
-      "coinType": "Деревянная монета",
-      "damage": "",
-      "count": "1",
-      "rarity": "rarity-common",
-      "comment": "",
-      "enchantments": "",
-      "icon": "images/img_1032.png"
-    },
-    {
       "name": "Тяжелый палаш",
       "catType": "Оружие",
       "armorType": "Кожаная",
@@ -12922,18 +12924,6 @@
       "comment": "",
       "enchantments": "Острота 3 прочность 2",
       "icon": "images/img_1033.png"
-    },
-    {
-      "name": "Красивая куртка",
-      "catType": "Броня",
-      "armorType": "Кожаная",
-      "coinType": "Деревянная монета",
-      "damage": "",
-      "count": "",
-      "rarity": "rarity-common",
-      "comment": "",
-      "enchantments": "Прочность3",
-      "icon": "images/img_1034.png"
     },
     {
       "name": "Гномья броня",
@@ -14256,42 +14246,6 @@
       "icon": "images/img_1144.png"
     },
     {
-      "name": "Гоблинская кольчуга",
-      "catType": "Броня",
-      "armorType": "Кольчужная",
-      "coinType": "Деревянная монета",
-      "damage": "",
-      "count": "",
-      "rarity": "rarity-uncommon",
-      "comment": "",
-      "enchantments": "Защита II Огнеупорность III Прочность III",
-      "icon": "images/img_1145.png"
-    },
-    {
-      "name": "Гоблинская кольчуга",
-      "catType": "Броня",
-      "armorType": "Кольчужная",
-      "coinType": "Деревянная монета",
-      "damage": "",
-      "count": "",
-      "rarity": "rarity-uncommon",
-      "comment": "",
-      "enchantments": "Защита II Огнеупорность III Прочность III",
-      "icon": "images/img_1146.png"
-    },
-    {
-      "name": "Гоблинская кольчуга",
-      "catType": "Броня",
-      "armorType": "Кольчужная",
-      "coinType": "Деревянная монета",
-      "damage": "",
-      "count": "",
-      "rarity": "rarity-uncommon",
-      "comment": "",
-      "enchantments": "Защита II Огнеупорность III Прочность III",
-      "icon": "images/img_1147.png"
-    },
-    {
       "name": "Гоблинский шлем",
       "catType": "Броня",
       "armorType": "Алмазная",
@@ -14364,30 +14318,6 @@
       "icon": "images/img_1153.png"
     },
     {
-      "name": "Броня из паутины",
-      "catType": "Броня",
-      "armorType": "Железная",
-      "coinType": "Деревянная монета",
-      "damage": "",
-      "count": "",
-      "rarity": "rarity-uncommon",
-      "comment": "",
-      "enchantments": "защита 1 прочность 3",
-      "icon": "images/img_1154.png"
-    },
-    {
-      "name": "Броня из паутины",
-      "catType": "Броня",
-      "armorType": "Железная",
-      "coinType": "Деревянная монета",
-      "damage": "",
-      "count": "",
-      "rarity": "rarity-uncommon",
-      "comment": "",
-      "enchantments": "защита 1 прочность 3",
-      "icon": "images/img_1155.png"
-    },
-    {
       "name": "Ржавый шлем",
       "catType": "Броня",
       "armorType": "Железная",
@@ -14422,18 +14352,6 @@
       "comment": "",
       "enchantments": "",
       "icon": "images/img_1158.png"
-    },
-    {
-      "name": "Адский навар",
-      "catType": "Другое",
-      "armorType": "Кожаная",
-      "coinType": "Деревянная монета",
-      "damage": "",
-      "count": "1",
-      "rarity": "rarity-common",
-      "comment": "",
-      "enchantments": "Огнеупорность 1 на 3 мин",
-      "icon": "images/img_1159.png"
     },
     {
       "name": "Топор азола",
@@ -14506,54 +14424,6 @@
       "comment": "",
       "enchantments": "Острота 16 прочность  6 добыча 2   х3 вставка рун",
       "icon": "images/img_1165.png"
-    },
-    {
-      "name": "Броня из паутины",
-      "catType": "Броня",
-      "armorType": "Железная",
-      "coinType": "Деревянная монета",
-      "damage": "",
-      "count": "",
-      "rarity": "rarity-uncommon",
-      "comment": "",
-      "enchantments": "защита 1 прочность 3",
-      "icon": "images/img_1166.png"
-    },
-    {
-      "name": "Броня из паутины",
-      "catType": "Броня",
-      "armorType": "Железная",
-      "coinType": "Деревянная монета",
-      "damage": "",
-      "count": "1",
-      "rarity": "rarity-uncommon",
-      "comment": "",
-      "enchantments": "защита 1 прочность 3",
-      "icon": "images/img_1167.png"
-    },
-    {
-      "name": "Броня из паутины",
-      "catType": "Броня",
-      "armorType": "Железная",
-      "coinType": "Деревянная монета",
-      "damage": "",
-      "count": "",
-      "rarity": "rarity-uncommon",
-      "comment": "",
-      "enchantments": "защита 1 прочность 3",
-      "icon": "images/img_1168.png"
-    },
-    {
-      "name": "Броня из паутины",
-      "catType": "Броня",
-      "armorType": "Железная",
-      "coinType": "Деревянная монета",
-      "damage": "",
-      "count": "",
-      "rarity": "rarity-uncommon",
-      "comment": "",
-      "enchantments": "защита 1 прочность 3",
-      "icon": "images/img_1169.png"
     },
     {
       "name": "Шлем охотника на пауков",
@@ -14674,18 +14544,6 @@
       "comment": "",
       "enchantments": "Защита 3 прочность 8 +8 макс здоровья  +1 урон",
       "icon": "images/img_1179.png"
-    },
-    {
-      "name": "Золотое яблоко",
-      "catType": "Еда",
-      "armorType": "Кожаная",
-      "coinType": "Деревянная монета",
-      "damage": "",
-      "count": "1",
-      "rarity": "rarity-uncommon",
-      "comment": "Чарка",
-      "enchantments": "",
-      "icon": "images/img_1180.png"
     },
     {
       "name": "Шлем боли",
