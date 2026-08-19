@@ -12680,20 +12680,6 @@
           "icon": "images/img_1013.png"
         }
       ]
-    },
-    {
-      "id": 1787160239387,
-      "name": "12313",
-      "type": "Моб",
-      "hp": 123123123,
-      "respawn": "",
-      "location": "",
-      "rawCoords": "",
-      "description": "",
-      "notes": "",
-      "image": "images/img_1013.png",
-      "favorite": false,
-      "drops": []
     }
   ],
   "library": [
