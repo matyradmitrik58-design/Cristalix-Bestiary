@@ -719,7 +719,7 @@
       "description": "",
       "notes": "",
       "image": "images/img_58.png",
-      "favorite": true,
+      "favorite": false,
       "drops": [
         {
           "name": "деревяная монета",
@@ -2225,7 +2225,7 @@
       "description": "Очень мал шанс выпадения лута",
       "notes": "",
       "image": "images/img_178.png",
-      "favorite": true,
+      "favorite": false,
       "drops": [
         {
           "name": "Королевский янтарь",
@@ -2705,7 +2705,7 @@
       "description": "",
       "notes": "",
       "image": "images/img_216.png",
-      "favorite": true,
+      "favorite": false,
       "drops": [
         {
           "name": "Копье охотников за головами",
@@ -4044,7 +4044,7 @@
       "description": "",
       "notes": "",
       "image": "images/img_322.png",
-      "favorite": true,
+      "favorite": false,
       "drops": [
         {
           "name": "Каменная монета",
@@ -7225,7 +7225,7 @@
         {
           "name": "ботинки ледяного скорпиона",
           "catType": "Броня",
-          "armorType": "Кольчужная",
+          "armorType": "Железная",
           "coinType": "Деревянная монета",
           "damage": "",
           "count": "",
@@ -8463,7 +8463,7 @@
       "description": "",
       "notes": "",
       "image": "images/img_675.png",
-      "favorite": true,
+      "favorite": false,
       "drops": [
         {
           "name": "Мясо мантикоры",
@@ -10407,10 +10407,11 @@
       "hp": 540,
       "respawn": "",
       "location": "",
+      "rawCoords": "",
       "description": "",
       "notes": "",
       "image": "images/img_831.png",
-      "favorite": false,
+      "favorite": true,
       "drops": [
         {
           "name": "деревяная монета",
@@ -10459,6 +10460,30 @@
           "enchantments": "Защита III Прочность III Проклятие несъёмности Шипы III Проклятие утраты +0.2 сопротивление  отбрасывания",
           "comment": "",
           "icon": "images/img_835.png"
+        },
+        {
+          "name": "Штаны утопленика",
+          "catType": "Броня",
+          "armorType": "Кожаная",
+          "coinType": "Деревянная монета",
+          "damage": "",
+          "count": "",
+          "rarity": "rarity-uncommon",
+          "enchantments": "Защита III Прочность III Проклятие несъёмности Шипы III Проклятие утраты +0.2 сопротивление  отбрасывания",
+          "comment": "",
+          "icon": "images/img_1238.png"
+        },
+        {
+          "name": "Ботинки утопленика",
+          "catType": "Броня",
+          "armorType": "Кожаная",
+          "coinType": "Деревянная монета",
+          "damage": "",
+          "count": "",
+          "rarity": "rarity-uncommon",
+          "enchantments": "Защита III Прочность III Проклятие несъёмности Шипы III Проклятие утраты +0.2 сопротивление  отбрасывания",
+          "comment": "",
+          "icon": "images/img_1239.png"
         }
       ]
     },
@@ -10469,10 +10494,11 @@
       "hp": 280,
       "respawn": "",
       "location": "",
+      "rawCoords": "",
       "description": "",
       "notes": "",
       "image": "images/img_836.png",
-      "favorite": false,
+      "favorite": true,
       "drops": [
         {
           "name": "деревяная монета",
@@ -10509,6 +10535,66 @@
           "enchantments": "Острота 3 прочность 2",
           "comment": "",
           "icon": "images/img_839.png"
+        },
+        {
+          "name": "Трезубец волн",
+          "catType": "Оружие",
+          "armorType": "Кожаная",
+          "coinType": "Деревянная монета",
+          "damage": "12",
+          "count": "",
+          "rarity": "rarity-rare",
+          "enchantments": "Острота 9 прочность 5  проклятие утраты",
+          "comment": "",
+          "icon": "images/img_288.png"
+        },
+        {
+          "name": "Ботинки из шкуры морского чудовища",
+          "catType": "Броня",
+          "armorType": "Железная",
+          "coinType": "Деревянная монета",
+          "damage": "",
+          "count": "",
+          "rarity": "rarity-rare",
+          "enchantments": "Защита 4  прочность 3  проклятие несьемности проклятие утраты",
+          "comment": "",
+          "icon": "images/img_1193.png"
+        },
+        {
+          "name": "поножи ледяного скорпиона",
+          "catType": "Броня",
+          "armorType": "Кольчужная",
+          "coinType": "Деревянная монета",
+          "damage": "",
+          "count": "",
+          "rarity": "rarity-rare",
+          "enchantments": "Защита 4  прочность 3  проклятие несьемности проклятие утраты",
+          "comment": "Не уверен",
+          "icon": "images/img_1192.png"
+        },
+        {
+          "name": "нагрудник ледяного скорпиона",
+          "catType": "Броня",
+          "armorType": "Кольчужная",
+          "coinType": "Деревянная монета",
+          "damage": "",
+          "count": "",
+          "rarity": "rarity-rare",
+          "enchantments": "Защита 4  прочность 3  проклятие несьемности проклятие утраты",
+          "comment": "Не уверен",
+          "icon": "images/img_1191.png"
+        },
+        {
+          "name": "Шлем ледяного скорпиона",
+          "catType": "Броня",
+          "armorType": "Кольчужная",
+          "coinType": "Деревянная монета",
+          "damage": "",
+          "count": "",
+          "rarity": "rarity-rare",
+          "enchantments": "Защита 4  прочность 3  проклятие несьемности проклятие утраты",
+          "comment": "Не уверен",
+          "icon": "images/img_1190.png"
         }
       ]
     },
@@ -10823,7 +10909,7 @@
       "description": "",
       "notes": "",
       "image": "images/img_864.png",
-      "favorite": true,
+      "favorite": false,
       "drops": [
         {
           "name": "Каменная монета",
@@ -15202,6 +15288,54 @@
       "comment": "",
       "enchantments": "Скорость 4 (2:30) Прыгучесть II (2:00) Регенерация II (1:30) Сопротивление (1:30) Невидимость (2:30) Слабость II (2:00)",
       "icon": "images/img_1236.png"
+    },
+    {
+      "name": "Штаны утопленика",
+      "catType": "Броня",
+      "armorType": "Кожаная",
+      "coinType": "Деревянная монета",
+      "damage": "",
+      "count": "",
+      "rarity": "rarity-uncommon",
+      "comment": "",
+      "enchantments": "Защита III Прочность III Проклятие несъёмности Шипы III Проклятие утраты +0.2 сопротивление  отбрасывания",
+      "icon": "images/img_1238.png"
+    },
+    {
+      "name": "Шапка утопленика",
+      "catType": "Броня",
+      "armorType": "Железная",
+      "coinType": "Деревянная монета",
+      "damage": "",
+      "count": "",
+      "rarity": "rarity-uncommon",
+      "comment": "",
+      "enchantments": "Защита III Прочность III Проклятие несъёмности Шипы III Проклятие утраты +0.2 сопротивление  отбрасывания",
+      "icon": "images/img_833.png"
+    },
+    {
+      "name": "Трезубец посейдона",
+      "catType": "Оружие",
+      "armorType": "Кожаная",
+      "coinType": "Деревянная монета",
+      "damage": "13",
+      "count": "",
+      "rarity": "rarity-epic",
+      "comment": "",
+      "enchantments": "Острота 11 прочность 4  вставка рун  +1",
+      "icon": "images/img_288.png"
+    },
+    {
+      "name": "Ботинки утопленика",
+      "catType": "Броня",
+      "armorType": "Кожаная",
+      "coinType": "Деревянная монета",
+      "damage": "",
+      "count": "",
+      "rarity": "rarity-uncommon",
+      "comment": "",
+      "enchantments": "Защита III Прочность III Проклятие несъёмности Шипы III Проклятие утраты +0.2 сопротивление  отбрасывания",
+      "icon": "images/img_1239.png"
     }
   ]
 }
